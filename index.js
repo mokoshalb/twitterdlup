@@ -14,7 +14,6 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 app.get('/:id', function(req, res){
     let twitterid = req.params.id
-    let result
     request('https://api.animemoe.us/twitter-video-downloader/v2/?id='+twitterid, function (error, response, body) {
         if (!error && response.statusCode == 200) {
             let importedJSON = JSON.parse(body);
@@ -32,28 +31,30 @@ app.get('/:id', function(req, res){
                 file.on("finish", () => {
                     file.close();
                     console.log("Download Completed");
+                    const stream = fs.createReadStream(filename);
+                    const formData = {'files[]': stream,};
+                    request.post({url:'https://pomf.lain.la/upload.php', formData: formData}, function optionalCallback(err, httpResponse, body) {
+                        if (err) {
+                            return console.error('upload failed:', err);
+                        }
+                        //console.log('Upload successful!  Server responded with:', body);
+                        let bodyJSON = JSON.parse(body);
+                        let mp4 = bodyJSON.files[0].url
+                        let size = bodyJSON.files[0].size
+                        if(size > 0){
+                            console.log(mp4)
+                            res.send(mp4);
+                        }else{
+                            res.send("empty file");
+                        }
+                        fs.unlink(filename, function (err) {
+                            if (err) throw err;
+                            // if no error, file has been deleted successfully
+                            console.log('File deleted!');
+                        });
+                    });
                 });
             });
-            const stream = fs.createReadStream(filename);
-            const formData = {'files[]': stream,};
-            request.post({url:'https://pomf.lain.la/upload.php', formData: formData}, function optionalCallback(err, httpResponse, body) {
-                if (err) {
-                    result = "upload failed"
-                    return console.error('upload failed:', err);
-                }
-                console.log('Upload successful!  Server responded with:', body);
-                let bodyJSON = JSON.parse(body);
-                let mp4 = bodyJSON.files[0].url
-                let size = bodyJSON.files[0].size
-                if(size > 0){
-                    console.log(mp4)
-                    result = mp4
-                }else{
-                    result = "empty file";
-                }
-            });
-            fs.unlinkSync(filename)
-            res.send(result);
         }
     })
 });
