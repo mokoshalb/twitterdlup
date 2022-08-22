@@ -86,7 +86,7 @@ app.get('/download/:url', function (req, res) {
 					res.send("empty file");
 				}
 				fs.unlink(filename, function (err) {
-					if (err) throw err;
+					//if (err) throw err;
 					console.log('File deleted!');
 				});
 			});
