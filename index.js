@@ -62,36 +62,36 @@ app.get('/download/:url', function (req, res) {
 	if(!req.params.url){
 		return res.status(400).send({error: "URL missing"});
 	}
-	let url = Buffer.from(req.params.url, 'base64');
+	let url = Buffer.from(req.params.url, 'base64').toString('utf-8');
     let filename ="temp/"+req.params.url+".mp4"
     const file = fs.createWriteStream(filename);
-	https.get(url, function(response) {
-		response.pipe(file);
-		file.on("finish", () => {
-			file.close();
-			console.log("Download Completed");
-			const stream = fs.createReadStream(filename);
-			const formData = {'files[]': stream,};
-			request.post({url:'https://pomf.lain.la/upload.php', formData: formData}, function optionalCallback(err, httpResponse, body) {
-				if (err) {
-					return console.error('upload failed:', err);
-				}
-				let bodyJSON = JSON.parse(body);
-				let mp4 = bodyJSON.files[0].url
-				let size = bodyJSON.files[0].size
-				if(size > 0){
-					console.log(mp4)
-					res.send(mp4);
-				}else{
-					res.send("empty file");
-				}
-				fs.unlink(filename, function (err) {
-					//if (err) throw err;
-					console.log('File deleted!');
-				});
-			});
-		});
-	});
+    https.get(url, function(response) {
+        response.pipe(file);
+        file.on("finish", () => {
+            file.close();
+            console.log("Download Completed");
+            const stream = fs.createReadStream(filename);
+            const formData = {'files[]': stream,};
+            request.post({url:'https://pomf.lain.la/upload.php', formData: formData}, function optionalCallback(err, httpResponse, body) {
+                if (err) {
+                    return console.error('upload failed:', err);
+                }
+                let bodyJSON = JSON.parse(body);
+                let mp4 = bodyJSON.files[0].url
+                let size = bodyJSON.files[0].size
+                if(size > 0){
+                    console.log(mp4)
+                    res.send(mp4);
+                }else{
+                    res.send("empty file");
+                }
+                fs.unlink(filename, function (err) {
+                    if (err) throw err;
+                    console.log('File deleted!');
+                });
+            });
+        });
+    });
 });
 
 app.listen(process.env.PORT ||3000, () => console.log('server is running'))
